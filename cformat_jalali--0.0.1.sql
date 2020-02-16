@@ -3,5 +3,11 @@ CREATE OR REPLACE FUNCTION cformat_jalali(
     with_time BOOLEAN DEFAULT TRUE,
     use_utc BOOLEAN DEFAULT FALSE
 )
-RETURNS TEXT AS 'MODULE_PATHNAME','cformat_jalali'
+RETURNS TEXT AS 'MODULE_PATHNAME','cformat_jalali_timestamp'
+LANGUAGE C STRICT;
+
+CREATE OR REPLACE FUNCTION cformat_jalali(
+    date
+)
+RETURNS TEXT AS 'MODULE_PATHNAME','cformat_jalali_date'
 LANGUAGE C STRICT;
