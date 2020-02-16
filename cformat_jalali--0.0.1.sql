@@ -1,0 +1,7 @@
+CREATE OR REPLACE FUNCTION cformat_jalali(
+    timestamp WITH TIME ZONE,
+    with_time BOOLEAN DEFAULT TRUE,
+    use_utc BOOLEAN DEFAULT FALSE
+)
+RETURNS TEXT AS 'MODULE_PATHNAME','cformat_jalali'
+LANGUAGE C STRICT;

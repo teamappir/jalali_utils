@@ -1,0 +1,5 @@
+
+comment = 'Convert Gregorian to Jalali datetime'
+default_version = '0.0.1'
+relocatable = true
+module_pathname = '$libdir/cformat_jalali'
