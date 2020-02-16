@@ -25,9 +25,7 @@ const int j_days_in_month[12] = {31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29}
 PG_MODULE_MAGIC;
 PG_FUNCTION_INFO_V1(cformat_jalali);
 
-Datum
-    cformat_jalali(PG_FUNCTION_ARGS)
-{
+Datum cformat_jalali(PG_FUNCTION_ARGS){
     Timestamp timestamp = PG_GETARG_TIMESTAMPTZ(0);
     bool with_time = PG_GETARG_BOOL(1);
     bool use_utc = PG_GETARG_BOOL(2);
@@ -58,13 +56,11 @@ Datum
 
     g_day_no = 365 * gy + (gy + 3) / 4 - (gy + 99) / 100 + (gy + 399) / 400;
 
-    for (i = 0; i < gm; i++)
-    {
+    for (i = 0; i < gm; i++){
         g_day_no += g_days_in_month[i];
     }
 
-    if (gm > 1 && ((gy % 4 == 0 && gy % 100 != 0) || (gy % 400 == 0)))
-    {
+    if (gm > 1 && ((gy % 4 == 0 && gy % 100 != 0) || (gy % 400 == 0))){
         g_day_no += 1;
     }
     g_day_no += gd;
@@ -77,37 +73,30 @@ Datum
 
     j_day_no %= 1461;
 
-    if (j_day_no >= 366)
-    {
+    if (j_day_no >= 366){
         jy += (j_day_no - 1) / 365;
         j_day_no = (j_day_no - 1) % 365;
     }
-    for (i = 0; i < 11; i++)
-    {
-        if (!(j_day_no >= j_days_in_month[i]))
-        {
+    for (i = 0; i < 11; i++){
+        if (!(j_day_no >= j_days_in_month[i])){
             i -= 1;
             break;
         }
         j_day_no -= j_days_in_month[i];
     }
 
-    if (i == 11)
-    {
+    if (i == 11){
         jm = i + 1;
     }
-    else
-    {
+    else{
         jm = i + 2;
     }
     jd = j_day_no + 1;
 
-    if (with_time)
-    {
-        result = psprintf("-%d-%02d-%02d %02d:%02d:%02d", with_time, use_utc, jd, ghour, gminute, gsecond);
+    if (with_time){
+        result = psprintf("-%d-%02d-%02d %02d:%02d:%02d", jy, jm, jd, ghour, gminute, gsecond);
     }
-    else
-    {
+    else{
         result = psprintf("-%d-%02d-%02d", jy, jm, jd);
     }
 
