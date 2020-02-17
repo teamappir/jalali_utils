@@ -1,4 +1,5 @@
 #include "postgres.h"
+#include "pgtime.h"
 #include "nodes/makefuncs.h"
 #include "utils/timestamp.h"
 #include "utils/date.h"
@@ -19,9 +20,9 @@ struct datetime {
   short second;
 };
 
-struct datetime tm_to_jalai(struct tm *tm);
+struct datetime tm_to_jalai(struct pg_tm *tm);
 
-struct datetime tm_to_jalai(struct tm *tm)
+struct datetime tm_to_jalai(struct pg_tm *tm)
 {
   struct datetime jalali;
   int j_day_no, j_np;
@@ -47,7 +48,7 @@ struct datetime tm_to_jalai(struct tm *tm)
 
   j_day_no %= 1461;
 
-  if (j_day_no >= 366){
+  if (j_day_no >= 366) {
     jalali.year += (j_day_no - 1) / 365;
     j_day_no = (j_day_no - 1) % 365;
   }
@@ -70,13 +71,13 @@ struct datetime tm_to_jalai(struct tm *tm)
 Datum cformat_jalali_timestamp(PG_FUNCTION_ARGS){
     Timestamp timestamp = PG_GETARG_TIMESTAMPTZ(0);
     bool with_time = PG_GETARG_BOOL(1);
-    bool use_utc = PG_GETARG_BOOL(2);
 
     pg_time_t t = timestamptz_to_time_t(timestamp);
-    char *result;
-    struct tm tm = use_utc ? *gmtime(&t) : *localtime(&t);
-    struct datetime jdate = tm_to_jalai(&tm);
+    pg_tz *tehran = pg_tzset("Asia/Tehran");
+    struct pg_tm *tm = pg_localtime(&t, tehran);
+    struct datetime jdate = tm_to_jalai(tm);
 
+    char *result;
     if (with_time) {
         result = psprintf("-%d/%02d/%02d %02d:%02d:%02d",
                           jdate.year, jdate.month, jdate.day,
@@ -92,7 +93,7 @@ Datum cformat_jalali_date(PG_FUNCTION_ARGS){
     Timestamp timestamp = date2timestamp_no_overflow(date);
 
     pg_time_t t = timestamptz_to_time_t(timestamp);
-    struct tm tm = *gmtime(&t);
+    struct pg_tm tm = *pg_gmtime(&t);
     struct datetime jdate = tm_to_jalai(&tm);
     char * result  = psprintf("-%d/%02d/%02d", jdate.year, jdate.month, jdate.day);
     PG_RETURN_CSTRING(result);
