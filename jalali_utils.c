@@ -8,9 +8,8 @@ const int g_days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
 const int j_days_in_month[12] = {31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29};
 
 PG_MODULE_MAGIC;
-PG_FUNCTION_INFO_V1(cformat_jalali_timestamp);
-PG_FUNCTION_INFO_V1(cformat_jalali_date);
-PG_FUNCTION_INFO_V1(week_number_jalali);
+PG_FUNCTION_INFO_V1(format_jalali_timestamp);
+PG_FUNCTION_INFO_V1(format_jalali_date);
 
 struct pg_tm tm_to_jalai(struct pg_tm *tm);
 
@@ -67,7 +66,7 @@ struct pg_tm tm_to_jalai(struct pg_tm *tm){
   return jalali;
 };
 
-Datum cformat_jalali_timestamp(PG_FUNCTION_ARGS){
+Datum format_jalali_timestamp(PG_FUNCTION_ARGS){
     Timestamp timestamp = PG_GETARG_TIMESTAMPTZ(0);
     bool with_time = PG_GETARG_BOOL(1);
 
@@ -87,7 +86,7 @@ Datum cformat_jalali_timestamp(PG_FUNCTION_ARGS){
     PG_RETURN_CSTRING(result);
 }
 
-Datum cformat_jalali_date(PG_FUNCTION_ARGS){
+Datum format_jalali_date(PG_FUNCTION_ARGS){
     DateADT date = PG_GETARG_DATEADT(0);
     Timestamp timestamp = date2timestamp_no_overflow(date);
 
@@ -95,23 +94,5 @@ Datum cformat_jalali_date(PG_FUNCTION_ARGS){
     struct pg_tm tm = *pg_gmtime(&t);
     struct pg_tm jdate = tm_to_jalai(&tm);
     char * result  = psprintf("-%d/%02d/%02d", jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
-    PG_RETURN_CSTRING(result);
-}
-
-Datum week_number_jalali(PG_FUNCTION_ARGS){
-    DateADT date = PG_GETARG_DATEADT(0);
-    Timestamp timestamp = date2timestamp_no_overflow(date);
-
-    pg_time_t t = timestamptz_to_time_t(timestamp);
-    struct pg_tm tm = *pg_gmtime(&t);
-    struct pg_tm jdate = tm_to_jalai(&tm);
-    char * result;
-    int week_number;
-    if((jdate.tm_yday - jdate.tm_wday) < 0){
-      week_number = 0;
-    }else{
-      week_number = (jdate.tm_yday - jdate.tm_wday - 1) / 7 + 1;
-    }
-    result  = psprintf("-%d-%02d", jdate.tm_year, week_number);
     PG_RETURN_CSTRING(result);
 }
