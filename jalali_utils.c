@@ -75,15 +75,23 @@ Datum format_jalali_timestamp(PG_FUNCTION_ARGS){
     struct pg_tm *tm = pg_localtime(&t, tehran);
     struct pg_tm jdate = tm_to_jalai(tm);
 
-    char *result;
     if (with_time) {
-        result = psprintf("-%d/%02d/%02d %02d:%02d:%02d",
-                          jdate.tm_year, jdate.tm_mon, jdate.tm_mday,
-                          jdate.tm_hour, jdate.tm_min, jdate.tm_sec);
+        text *output = (text *) palloc(VARHDRSZ + 19);
+        char *result = psprintf("%d/%02d/%02d %02d:%02d:%02d",
+                                jdate.tm_year, jdate.tm_mon, jdate.tm_mday,
+                                jdate.tm_hour, jdate.tm_min, jdate.tm_sec);
+        SET_VARSIZE(output, VARHDRSZ + 19);
+        memcpy(output->vl_dat, result, 19);
+        PG_RETURN_CSTRING(output);
+        PG_RETURN_TEXT_P(output);
     } else {
-        result = psprintf("-%d/%02d/%02d", jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
+        text *output = (text *) palloc(VARHDRSZ + 10);
+        char *result = psprintf("%d/%02d/%02d",
+                                jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
+        SET_VARSIZE(output, VARHDRSZ + 10);
+        memcpy(output->vl_dat, result, 10);
+        PG_RETURN_TEXT_P(output);
     }
-    PG_RETURN_CSTRING(result);
 }
 
 Datum format_jalali_date(PG_FUNCTION_ARGS){
@@ -93,6 +101,10 @@ Datum format_jalali_date(PG_FUNCTION_ARGS){
     pg_time_t t = timestamptz_to_time_t(timestamp);
     struct pg_tm tm = *pg_gmtime(&t);
     struct pg_tm jdate = tm_to_jalai(&tm);
-    char * result  = psprintf("-%d/%02d/%02d", jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
-    PG_RETURN_CSTRING(result);
+    text *output = (text *) palloc(VARHDRSZ + 10);
+    char *result = psprintf("%d/%02d/%02d",
+                            jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
+    SET_VARSIZE(output, VARHDRSZ + 10);
+    memcpy(output->vl_dat, result, 10);
+    PG_RETURN_TEXT_P(output);
 }
