@@ -1,7 +1,9 @@
 #include "postgres.h"
+#include "parser/scansup.h"
 #include "pgtime.h"
 #include "nodes/makefuncs.h"
 #include "utils/timestamp.h"
+#include "utils/datetime.h"
 #include "utils/date.h"
 
 const int g_days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
@@ -10,6 +12,7 @@ const int j_days_in_month[12] = {31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29}
 PG_MODULE_MAGIC;
 PG_FUNCTION_INFO_V1(format_jalali_timestamp);
 PG_FUNCTION_INFO_V1(format_jalali_date);
+PG_FUNCTION_INFO_V1(jalali_part);
 
 struct pg_tm tm_to_jalai(struct pg_tm *tm);
 
@@ -107,4 +110,91 @@ Datum format_jalali_date(PG_FUNCTION_ARGS){
     SET_VARSIZE(output, VARHDRSZ + 10);
     memcpy(output->vl_dat, result, 10);
     PG_RETURN_TEXT_P(output);
+}
+
+Datum jalali_part(PG_FUNCTION_ARGS) {
+  text *units = PG_GETARG_TEXT_PP(0);
+  Timestamp timestamp = PG_GETARG_TIMESTAMPTZ(1);
+  char       *lowunits;
+  int  type, val;
+  float8      result;
+
+  pg_time_t t = timestamptz_to_time_t(timestamp);
+  pg_tz *tehran = pg_tzset("Asia/Tehran");
+  struct pg_tm *tm = pg_localtime(&t, tehran);
+  struct pg_tm jdatetime = tm_to_jalai(tm);
+
+  lowunits = downcase_truncate_identifier(VARDATA_ANY(units),
+                                          VARSIZE_ANY_EXHDR(units),
+                                          false);
+
+  type = DecodeUnits(0, lowunits, &val);
+
+  if (type == UNKNOWN_FIELD)
+    type = DecodeSpecial(0, lowunits, &val);
+
+
+  switch (val)
+    {
+    case DTK_SECOND:
+      result = (&jdatetime)->tm_sec  / 1000000.0;
+      break;
+
+    case DTK_MINUTE:
+      result = (&jdatetime)->tm_min;
+      break;
+
+    case DTK_HOUR:
+      result = (&jdatetime)->tm_hour;
+      break;
+
+    case DTK_DAY:
+      result = (&jdatetime)->tm_mday;
+      break;
+    case DTK_MONTH:
+      result = (&jdatetime)->tm_mon;
+      break;
+    case DTK_YEAR:
+      result = (&jdatetime)->tm_year;
+      break;
+    /* case DTK_DOW: */
+    /*   break; */
+    case DTK_DOY:
+      if ((&jdatetime)-> tm_mon < 6)
+        result = ((&jdatetime)-> tm_mon * 31) + (&jdatetime)-> tm_mday;
+
+      result = 186 + (&jdatetime)-> tm_mday;
+      result += ((&jdatetime)-> tm_mon - 7) * 30;
+      break;
+
+    case DTK_QUARTER:
+      result = ((&jdatetime)->tm_mon - 1) / 3 + 1;
+      break;
+    case DTK_DECADE:
+      if ((&jdatetime)->tm_year > 0)
+        result = ((&jdatetime)->tm_year / 10) * 10;
+      else
+        result = -((8 - ((&jdatetime)->tm_year - 1)) / 10) * 10;
+      break;
+    case DTK_CENTURY:
+      if ((&jdatetime)->tm_year > 0)
+        result = ((&jdatetime)->tm_year + 99) / 100;
+      else
+        result = -((99 - ((&jdatetime)->tm_year - 1)) / 100);
+      break;
+    case DTK_MILLENNIUM:
+      if ((&jdatetime)->tm_year > 0)
+        result = (((&jdatetime)->tm_year + 999) / 1000) * 1000 - 999;
+      else
+        result = -((999 - ((&jdatetime)->tm_year - 1)) / 1000) * 1000 + 1;
+      break;
+
+    default:
+      ereport(ERROR,
+              (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+               errmsg("\"time\" units \"%s\" not recognized",
+                      lowunits)));
+      result = 0;
+    }
+  PG_RETURN_INT32(result);
 }
