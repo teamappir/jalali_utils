@@ -2,3 +2,7 @@
 *.so
 *.o
 *.bc
+*.diff
+results
+regression.diffs
+regression.out

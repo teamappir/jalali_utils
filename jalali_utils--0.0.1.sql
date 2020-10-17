@@ -16,5 +16,12 @@ CREATE OR REPLACE FUNCTION jalali_part(
     text,
     timestamp WITH TIME ZONE
 )
-RETURNS INTEGER AS 'MODULE_PATHNAME','jalali_part'
+RETURNS INTEGER AS 'MODULE_PATHNAME','jalali_part_timestamp'
+LANGUAGE C STRICT;
+
+CREATE OR REPLACE FUNCTION jalali_part(
+    text,
+    date
+)
+RETURNS INTEGER AS 'MODULE_PATHNAME','jalali_part_date'
 LANGUAGE C STRICT;

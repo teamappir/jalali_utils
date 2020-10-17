@@ -1,0 +1,44 @@
+CREATE EXTENSION jalali_utils;
+SELECT format_jalali('2019-07-07 14:10:52.84937+04:30'::timestamptz, false);
+ format_jalali 
+---------------
+ 1398/04/16
+(1 row)
+
+SELECT format_jalali('2019-07-07 14:10:52.84937+04:30'::timestamptz);
+    format_jalali    
+---------------------
+ 1398/04/16 14:10:52
+(1 row)
+
+SELECT format_jalali('2019-07-07 14:10:52.84937+04:30'::date);
+ format_jalali 
+---------------
+ 1398/04/16
+(1 row)
+
+SELECT format_jalali('2001-10-15'::date);
+ format_jalali 
+---------------
+ 1380/07/23
+(1 row)
+
+SELECT format_jalali('2021-03-20'::date);
+ format_jalali 
+---------------
+ 1399/12/30
+(1 row)
+
+SELECT format_jalali('2020-03-19'::date);
+ format_jalali 
+---------------
+ 1398/12/29
+(1 row)
+
+SELECT format_jalali('2019-03-21'::date);
+ format_jalali 
+---------------
+ 1398/01/01
+(1 row)
+
+DROP EXTENSION jalali_utils;
