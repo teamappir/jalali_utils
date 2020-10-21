@@ -41,10 +41,12 @@ Dependencies:
 
 Run make to build and install
 > make
+
 > sudo make install
 
 Run this command in your psql shell:
 > \d your_db_name
+
 > CREATE EXTENSION jalali_utils;
 
 # Running tests
