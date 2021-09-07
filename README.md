@@ -1,6 +1,6 @@
 # Jalali Utils (A Jalali extension for PostgreSQL)
 Jalali Utils is a package for converting Gregorian dates to Jalali.
-These package consists of these functions:
+This package consists of the following functions:
 
 
 ```sql
@@ -14,10 +14,12 @@ Examples:
 ```sql
 SELECT format_jalali(now()); -->   1399/07/08 23:45:37
 SELECT format_jalali(now(), false); -->   1399/07/08
-SELECT format_jalali('2019-07-07'); -->  1398/04/16
+SELECT format_jalali('2019-07-07', false); -->  1398/04/16
 SELECT format_jalali('2021-03-20'); -->  1399/12/30 00:00:00
 SELECT format_jalali('2021-03-20'::date); -->  1399/12/30
 SELECT jalali_part('year', '2019-07-07 14:10:52.84937+04:30'); --> 1398
+SELECT jalali_part('minute', '2019-07-07 14:10:52.84937+04:30'); --> 10
+SELECT jalali_part('doy', '2019-07-07 14:10:52.84937+04:30'); --> 109
 SELECT jalali_part('dow', '2019-07-07'); --> 4
 ```
 
