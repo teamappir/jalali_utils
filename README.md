@@ -39,18 +39,31 @@ SELECT jalali_part('dow', '2019-07-07'); --> 4
 # Installation
 
 Dependencies:
-> sudo apt install postgresql-server-dev-12
-
-Run make to build and install
-> make
-
-> sudo make install
-
+```bash
+sudo apt install postgresql-server-dev-15
+```
+You may need to install `make` in order to compile the project. Therefore, you can run the following command:
+```bash
+sudo apt install build-essential
+```
+You may also need to install the `clang` package in order for the `make` command to run without errors:
+```bash
+apt install clang-11
+```
+Run `make` to build and install:
+```bash
+make
+sudo make install
+```
 Run this command in your psql shell:
-> \d your_db_name
-
-> CREATE EXTENSION jalali_utils;
-
+```
+\d your_db_name
+```
+Finally, you can create the extension in your database:
+```sql
+CREATE EXTENSION jalali_utils;
+```
 # Running tests
-
-> make installcheck
+```bash
+make installcheck
+```
