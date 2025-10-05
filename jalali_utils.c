@@ -87,7 +87,6 @@ Datum format_jalali_timestamp(PG_FUNCTION_ARGS){
                                 jdate.tm_hour, jdate.tm_min, jdate.tm_sec);
         SET_VARSIZE(output, VARHDRSZ + 19);
         memcpy(output->vl_dat, result, 19);
-        PG_RETURN_CSTRING(output);
         PG_RETURN_TEXT_P(output);
     } else {
         text *output = (text *) palloc(VARHDRSZ + 10);
