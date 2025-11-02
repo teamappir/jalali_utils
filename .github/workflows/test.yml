@@ -33,17 +33,20 @@ jobs:
     - name: Build extension
       run: |
         export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
+        export PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
         make clean || true
         make
         
     - name: Install extension
       run: |
         export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
+        export PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
         sudo make install
         
     - name: Run tests
       run: |
         export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
+        export PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
         make installcheck
         
     - name: Show regression results on failure
