@@ -1,0 +1,59 @@
+name: PostgreSQL Extension Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgres: [12, 13, 14, 15, 16, 17, 18]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install PostgreSQL ${{ matrix.postgres }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget ca-certificates
+        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+        echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+        sudo apt-get update
+        sudo apt-get install -y postgresql-${{ matrix.postgres }} postgresql-server-dev-${{ matrix.postgres }}
+        
+    - name: Start PostgreSQL
+      run: |
+        sudo systemctl start postgresql
+        sudo -u postgres createuser -s runner
+        
+    - name: Build extension
+      run: |
+        export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
+        make clean || true
+        make
+        
+    - name: Install extension
+      run: |
+        export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
+        sudo make install
+        
+    - name: Run tests
+      run: |
+        export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
+        make installcheck
+        
+    - name: Show regression results on failure
+      if: failure()
+      run: |
+        if [ -f regression.diffs ]; then
+          echo "=== Regression test failures ==="
+          cat regression.diffs
+        fi
+        if [ -d results ]; then
+          echo "=== Test results ==="
+          find results -name "*.out" -exec echo "=== {} ===" \; -exec cat {} \;
+        fi
