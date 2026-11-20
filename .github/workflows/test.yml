@@ -18,36 +18,34 @@ jobs:
     
     - name: Install PostgreSQL ${{ matrix.postgres }}
       run: |
-        sudo apt-get update
-        sudo apt-get install -y wget ca-certificates
-        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-        echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+        sudo install -d /usr/share/postgresql-common/pgdg
+        sudo wget --quiet -O /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
         sudo apt-get update
         sudo apt-get install -y postgresql-${{ matrix.postgres }} postgresql-server-dev-${{ matrix.postgres }}
         
     - name: Start PostgreSQL
       run: |
-        sudo systemctl start postgresql
-        sudo -u postgres createuser -s runner
+        PG_VERSION=${{ matrix.postgres }}
+        sudo pg_ctlcluster "$PG_VERSION" main status >/dev/null 2>&1 || sudo pg_ctlcluster "$PG_VERSION" main start
+        PGPORT=$(pg_lsclusters --no-header | awk -v v="$PG_VERSION" '$1==v && $4=="online" {print $3; exit}')
+        if [ -z "$PGPORT" ]; then echo "PostgreSQL $PG_VERSION main cluster is not online" >&2; exit 1; fi
+        sudo -u postgres "/usr/lib/postgresql/$PG_VERSION/bin/createuser" -s "${USER:-$(id -un)}" --port="$PGPORT"
         
     - name: Build extension
       run: |
-        export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
-        export PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
         make clean || true
-        make
+        make PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
         
     - name: Install extension
       run: |
-        export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
-        export PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
-        sudo make install
+        sudo make install PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
         
     - name: Run tests
       run: |
         export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
-        export PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
-        make installcheck
+        PGPORT=$(pg_lsclusters --no-header | awk -v v="${{ matrix.postgres }}" '$1==v && $4=="online" {print $3; exit}')
+        make installcheck PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config" PGPORT="$PGPORT"
         
     - name: Show regression results on failure
       if: failure()
