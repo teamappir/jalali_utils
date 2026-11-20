@@ -10,45 +10,41 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        postgres: [12, 13, 14, 15, 16, 17, 18]
-    
+        postgres: [12, 13, 14, 15, 16, 17, 18, 19]
+    env:
+      PG_VERSION: ${{ matrix.postgres }}
+      PG_CONFIG: /usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config
+      PGPORT: 55432
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Install PostgreSQL ${{ matrix.postgres }}
       run: |
+        sudo mkdir -p /usr/share/postgresql-common/pgdg
+        sudo wget --quiet -O /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+        echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
         sudo apt-get update
-        sudo apt-get install -y wget ca-certificates
-        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-        echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-        sudo apt-get update
-        sudo apt-get install -y postgresql-${{ matrix.postgres }} postgresql-server-dev-${{ matrix.postgres }}
-        
+        sudo apt-get install -y "postgresql-$PG_VERSION" "postgresql-server-dev-$PG_VERSION"
+
     - name: Start PostgreSQL
       run: |
-        sudo systemctl start postgresql
-        sudo -u postgres createuser -s runner
-        
+        sudo pg_createcluster "$PG_VERSION" ci --port="$PGPORT" --start
+        sudo -u postgres "/usr/lib/postgresql/$PG_VERSION/bin/createuser" -s "$(id -un)" --port="$PGPORT"
+
     - name: Build extension
-      run: |
-        export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
-        export PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
-        make clean || true
-        make
-        
+      run: make PG_CONFIG="$PG_CONFIG"
+
     - name: Install extension
-      run: |
-        export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
-        export PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
-        sudo make install
-        
+      run: sudo make install PG_CONFIG="$PG_CONFIG"
+
     - name: Run tests
       run: |
-        export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
-        export PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config"
-        make installcheck
-        
+        export PATH="/usr/lib/postgresql/$PG_VERSION/bin:$PATH"
+        make installcheck PG_CONFIG="$PG_CONFIG"
+
     - name: Show regression results on failure
       if: failure()
       run: |
