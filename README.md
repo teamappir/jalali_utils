@@ -39,7 +39,7 @@ SELECT jalali_part('dow', '2019-07-07'); --> 4
 # Installation
 
 Dependencies:
-> sudo apt install postgresql-server-dev-12
+> sudo apt install postgresql-server-dev-17
 
 Run make to build and install
 > make
