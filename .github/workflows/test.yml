@@ -28,8 +28,11 @@ jobs:
     - name: Start PostgreSQL
       run: |
         PG_VERSION=${{ matrix.postgres }}
+        if ! pg_lsclusters --no-header | awk -v v="$PG_VERSION" '$1==v && $2=="main" {found=1} END {exit !found}'; then
+          sudo pg_createcluster "$PG_VERSION" main
+        fi
         sudo pg_ctlcluster "$PG_VERSION" main status >/dev/null 2>&1 || sudo pg_ctlcluster "$PG_VERSION" main start
-        PGPORT=$(pg_lsclusters --no-header | awk -v v="$PG_VERSION" '$1==v && $4=="online" {print $3; exit}')
+        PGPORT=$(pg_lsclusters --no-header | awk -v v="$PG_VERSION" '$1==v && $2=="main" && $4=="online" {print $3; exit}')
         if [ -z "$PGPORT" ]; then echo "PostgreSQL $PG_VERSION main cluster is not online" >&2; exit 1; fi
         sudo -u postgres "/usr/lib/postgresql/$PG_VERSION/bin/createuser" -s "${USER:-$(id -un)}" --port="$PGPORT"
 
@@ -45,7 +48,7 @@ jobs:
     - name: Run tests
       run: |
         export PATH="/usr/lib/postgresql/${{ matrix.postgres }}/bin:$PATH"
-        PGPORT=$(pg_lsclusters --no-header | awk -v v="${{ matrix.postgres }}" '$1==v && $4=="online" {print $3; exit}')
+        PGPORT=$(pg_lsclusters --no-header | awk -v v="${{ matrix.postgres }}" '$1==v && $2=="main" && $4=="online" {print $3; exit}')
         make installcheck PG_CONFIG="/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config" PGPORT="$PGPORT"
 
     - name: Show regression results on failure
