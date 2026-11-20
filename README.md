@@ -38,19 +38,41 @@ SELECT jalali_part('dow', '2019-07-07'); --> 4
 
 # Installation
 
-Dependencies:
-> sudo apt install postgresql-server-dev-17
+CI tests PostgreSQL 12–18.
 
-Run make to build and install
-> make
+On Debian or Ubuntu, set `PG_VERSION` to your target PostgreSQL major version.
+The following example uses 18; replace it with your installed version:
 
-> sudo make install
+```sh
+PG_VERSION=18
+sudo apt install "postgresql-server-dev-$PG_VERSION"
+PG_CONFIG="/usr/lib/postgresql/$PG_VERSION/bin/pg_config"
+```
 
-Run this command in your psql shell:
-> \d your_db_name
+Build and install using the same PostgreSQL version:
 
-> CREATE EXTENSION jalali_utils;
+```sh
+make PG_CONFIG="$PG_CONFIG"
+sudo make install PG_CONFIG="$PG_CONFIG"
+```
+
+In `psql`, connect to your database and enable the extension:
+
+```sql
+\connect your_db_name
+CREATE EXTENSION jalali_utils;
+```
 
 # Running tests
 
-> make installcheck
+With the target PostgreSQL server running, use the same `PG_CONFIG` set above:
+
+```sh
+make installcheck PG_CONFIG="$PG_CONFIG"
+```
+
+If the server uses a non-default port, pass it with `PGPORT`:
+
+```sh
+make installcheck PG_CONFIG="$PG_CONFIG" PGPORT=55432
+```

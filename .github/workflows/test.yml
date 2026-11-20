@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        postgres: [12, 13, 14, 15, 16, 17, 18]
+        postgres: [12, 13, 14, 15, 16, 17, 18, 19]
     env:
       PG_VERSION: ${{ matrix.postgres }}
       PG_CONFIG: /usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config
