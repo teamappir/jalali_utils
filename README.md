@@ -38,7 +38,7 @@ SELECT jalali_part('dow', '2019-07-07'); --> 4
 
 # Installation
 
-CI tests PostgreSQL 12–18.
+CI tests PostgreSQL 12–19.
 
 On Debian or Ubuntu, set `PG_VERSION` to your target PostgreSQL major version.
 The following example uses 18; replace it with your installed version:
