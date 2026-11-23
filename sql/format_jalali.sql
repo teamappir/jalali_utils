@@ -13,4 +13,6 @@ SELECT format_jalali('infinity'::timestamptz);
 SELECT format_jalali('-infinity'::timestamptz);
 SELECT format_jalali('infinity'::date);
 SELECT format_jalali('-infinity'::date);
+SELECT format_jalali('294247-01-01'::date);
+SELECT format_jalali('5874897-12-31'::date);
 DROP EXTENSION jalali_utils;

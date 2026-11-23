@@ -77,4 +77,12 @@ SELECT format_jalali('-infinity'::date);
  ازل
 (1 row)
 
+SELECT format_jalali('294247-01-01'::date);
+ format_jalali 
+---------------
+ 293625/11/03
+(1 row)
+
+SELECT format_jalali('5874897-12-31'::date);
+ERROR:  date out of range for timestamp
 DROP EXTENSION jalali_utils;

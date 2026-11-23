@@ -46,4 +46,6 @@ SELECT jalali_part('year', '-infinity'::timestamptz);
 
 SELECT jalali_part('year', '-infinity'::date);
 
+SELECT jalali_part('year', '5874897-12-31'::date);
+
 DROP EXTENSION jalali_utils;

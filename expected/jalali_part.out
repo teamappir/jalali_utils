@@ -129,4 +129,6 @@ SELECT jalali_part('year', '-infinity'::timestamptz);
 ERROR:  timestamp out of range
 SELECT jalali_part('year', '-infinity'::date);
 ERROR:  timestamp out of range
+SELECT jalali_part('year', '5874897-12-31'::date);
+ERROR:  date out of range for timestamp
 DROP EXTENSION jalali_utils;

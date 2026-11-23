@@ -115,6 +115,10 @@ Datum format_jalali_date(PG_FUNCTION_ARGS){
         PG_RETURN_TEXT_P(cstring_to_text("ازل"));
     if (DATE_IS_NOEND(date))
         PG_RETURN_TEXT_P(cstring_to_text("ابد"));
+    if (date > 106751991 || date < -106751991)
+        ereport(ERROR,
+                (errcode(ERRCODE_DATETIME_VALUE_OUT_OF_RANGE),
+                 errmsg("date out of range for timestamp")));
     Timestamp timestamp = date2timestamp_no_overflow(date);
 
     pg_time_t t = timestamptz_to_time_t(timestamp);
@@ -230,6 +234,10 @@ Datum jalali_part_date(PG_FUNCTION_ARGS) {
     ereport(ERROR,
             (errcode(ERRCODE_DATETIME_FIELD_OVERFLOW),
              errmsg("timestamp out of range")));
+  if (date > 106751991 || date < -106751991)
+    ereport(ERROR,
+            (errcode(ERRCODE_DATETIME_VALUE_OUT_OF_RANGE),
+             errmsg("date out of range for timestamp")));
   TimestampTz timestamp = date2timestamp_no_overflow(date);
   pg_time_t t = timestamptz_to_time_t(timestamp);
   int result = time_t_to_jalali_part(units, &t);
