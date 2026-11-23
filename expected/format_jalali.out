@@ -41,4 +41,16 @@ SELECT format_jalali('2019-03-21'::date);
  1398/01/01
 (1 row)
 
+SELECT format_jalali('11000-06-15'::date);
+ format_jalali 
+---------------
+ 10379/03/26
+(1 row)
+
+SELECT octet_length(format_jalali('622-12-31'::date)) = char_length(format_jalali('622-12-31'::date));
+ ?column? 
+----------
+ t
+(1 row)
+
 DROP EXTENSION jalali_utils;

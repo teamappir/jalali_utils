@@ -7,4 +7,6 @@ SELECT format_jalali('2001-10-15'::date);
 SELECT format_jalali('2021-03-20'::date);
 SELECT format_jalali('2020-03-19'::date);
 SELECT format_jalali('2019-03-21'::date);
+SELECT format_jalali('11000-06-15'::date);
+SELECT octet_length(format_jalali('622-12-31'::date)) = char_length(format_jalali('622-12-31'::date));
 DROP EXTENSION jalali_utils;

@@ -84,19 +84,21 @@ Datum format_jalali_timestamp(PG_FUNCTION_ARGS){
     struct pg_tm jdate = tm_to_jalali(tm);
 
     if (with_time) {
-        text *output = (text *) palloc(VARHDRSZ + 19);
-        char *result = psprintf("%d/%02d/%02d %02d:%02d:%02d",
-                                jdate.tm_year, jdate.tm_mon, jdate.tm_mday,
-                                jdate.tm_hour, jdate.tm_min, jdate.tm_sec);
-        SET_VARSIZE(output, VARHDRSZ + 19);
-        memcpy(output->vl_dat, result, 19);
+        char buf[64];
+        int len = snprintf(buf, sizeof(buf), "%d/%02d/%02d %02d:%02d:%02d",
+                           jdate.tm_year, jdate.tm_mon, jdate.tm_mday,
+                           jdate.tm_hour, jdate.tm_min, jdate.tm_sec);
+        text *output = (text *) palloc(VARHDRSZ + len);
+        SET_VARSIZE(output, VARHDRSZ + len);
+        memcpy(VARDATA(output), buf, len);
         PG_RETURN_TEXT_P(output);
     } else {
-        text *output = (text *) palloc(VARHDRSZ + 10);
-        char *result = psprintf("%d/%02d/%02d",
-                                jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
-        SET_VARSIZE(output, VARHDRSZ + 10);
-        memcpy(output->vl_dat, result, 10);
+        char buf[64];
+        int len = snprintf(buf, sizeof(buf), "%d/%02d/%02d",
+                           jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
+        text *output = (text *) palloc(VARHDRSZ + len);
+        SET_VARSIZE(output, VARHDRSZ + len);
+        memcpy(VARDATA(output), buf, len);
         PG_RETURN_TEXT_P(output);
     }
 }
@@ -108,11 +110,12 @@ Datum format_jalali_date(PG_FUNCTION_ARGS){
     pg_time_t t = timestamptz_to_time_t(timestamp);
     struct pg_tm tm = *pg_gmtime(&t);
     struct pg_tm jdate = tm_to_jalali(&tm);
-    text *output = (text *) palloc(VARHDRSZ + 10);
-    char *result = psprintf("%d/%02d/%02d",
-                            jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
-    SET_VARSIZE(output, VARHDRSZ + 10);
-    memcpy(output->vl_dat, result, 10);
+    char buf[64];
+    int len = snprintf(buf, sizeof(buf), "%d/%02d/%02d",
+                       jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
+    text *output = (text *) palloc(VARHDRSZ + len);
+    SET_VARSIZE(output, VARHDRSZ + len);
+    memcpy(VARDATA(output), buf, len);
     PG_RETURN_TEXT_P(output);
 }
 
