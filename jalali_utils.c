@@ -8,6 +8,7 @@
 #include "utils/timestamp.h"
 #include "utils/datetime.h"
 #include "utils/date.h"
+#include "utils/builtins.h"
 
 const int g_days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 const int j_days_in_month[12] = {31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29};
@@ -78,6 +79,11 @@ Datum format_jalali_timestamp(PG_FUNCTION_ARGS){
     TimestampTz timestamp = PG_GETARG_TIMESTAMPTZ(0);
     bool with_time = PG_GETARG_BOOL(1);
 
+    if (TIMESTAMP_IS_NOBEGIN(timestamp))
+        PG_RETURN_TEXT_P(cstring_to_text("ازل"));
+    if (TIMESTAMP_IS_NOEND(timestamp))
+        PG_RETURN_TEXT_P(cstring_to_text("ابد"));
+
     pg_time_t t = timestamptz_to_time_t(timestamp);
     pg_tz *tehran = pg_tzset("Asia/Tehran");
     struct pg_tm *tm = pg_localtime(&t, tehran);
@@ -105,6 +111,10 @@ Datum format_jalali_timestamp(PG_FUNCTION_ARGS){
 
 Datum format_jalali_date(PG_FUNCTION_ARGS){
     DateADT date = PG_GETARG_DATEADT(0);
+    if (DATE_IS_NOBEGIN(date))
+        PG_RETURN_TEXT_P(cstring_to_text("ازل"));
+    if (DATE_IS_NOEND(date))
+        PG_RETURN_TEXT_P(cstring_to_text("ابد"));
     Timestamp timestamp = date2timestamp_no_overflow(date);
 
     pg_time_t t = timestamptz_to_time_t(timestamp);
@@ -204,6 +214,10 @@ int time_t_to_jalali_part(text* units, pg_time_t* t) {
 Datum jalali_part_timestamp(PG_FUNCTION_ARGS) {
   text *units = PG_GETARG_TEXT_PP(0);
   TimestampTz timestamp = PG_GETARG_TIMESTAMPTZ(1);
+  if (TIMESTAMP_NOT_FINITE(timestamp))
+    ereport(ERROR,
+            (errcode(ERRCODE_DATETIME_FIELD_OVERFLOW),
+             errmsg("timestamp out of range")));
   pg_time_t t = timestamptz_to_time_t(timestamp);
   int result = time_t_to_jalali_part(units, &t);
   PG_RETURN_INT32(result);
@@ -212,6 +226,10 @@ Datum jalali_part_timestamp(PG_FUNCTION_ARGS) {
 Datum jalali_part_date(PG_FUNCTION_ARGS) {
   text *units = PG_GETARG_TEXT_PP(0);
   DateADT date = PG_GETARG_DATEADT(1);
+  if (DATE_NOT_FINITE(date))
+    ereport(ERROR,
+            (errcode(ERRCODE_DATETIME_FIELD_OVERFLOW),
+             errmsg("timestamp out of range")));
   TimestampTz timestamp = date2timestamp_no_overflow(date);
   pg_time_t t = timestamptz_to_time_t(timestamp);
   int result = time_t_to_jalali_part(units, &t);

@@ -125,4 +125,8 @@ SELECT jalali_part('dow', '2020-10-23');
            6
 (1 row)
 
+SELECT jalali_part('year', '-infinity'::timestamptz);
+ERROR:  timestamp out of range
+SELECT jalali_part('year', '-infinity'::date);
+ERROR:  timestamp out of range
 DROP EXTENSION jalali_utils;

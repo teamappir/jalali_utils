@@ -42,4 +42,8 @@ SELECT jalali_part('dow', '2020-10-17');
 
 SELECT jalali_part('dow', '2020-10-23');
 
+SELECT jalali_part('year', '-infinity'::timestamptz);
+
+SELECT jalali_part('year', '-infinity'::date);
+
 DROP EXTENSION jalali_utils;

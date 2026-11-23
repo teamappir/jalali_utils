@@ -53,4 +53,28 @@ SELECT octet_length(format_jalali('622-12-31'::date)) = char_length(format_jalal
  t
 (1 row)
 
+SELECT format_jalali('infinity'::timestamptz);
+ format_jalali 
+---------------
+ ابد
+(1 row)
+
+SELECT format_jalali('-infinity'::timestamptz);
+ format_jalali 
+---------------
+ ازل
+(1 row)
+
+SELECT format_jalali('infinity'::date);
+ format_jalali 
+---------------
+ ابد
+(1 row)
+
+SELECT format_jalali('-infinity'::date);
+ format_jalali 
+---------------
+ ازل
+(1 row)
+
 DROP EXTENSION jalali_utils;
