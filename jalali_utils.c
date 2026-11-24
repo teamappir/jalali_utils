@@ -9,6 +9,7 @@
 #include "utils/datetime.h"
 #include "utils/date.h"
 #include "utils/builtins.h"
+#include "mb/pg_wchar.h"
 
 static const int g_days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 static const int j_days_in_month[12] = {31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29};
@@ -84,86 +85,109 @@ static struct pg_tm tm_to_jalali(struct pg_tm *tm){
   return jalali;
 };
 
-Datum format_jalali_timestamp(PG_FUNCTION_ARGS){
-    TimestampTz timestamp = PG_GETARG_TIMESTAMPTZ(0);
-    bool with_time = PG_GETARG_BOOL(1);
-
-    if (TIMESTAMP_IS_NOBEGIN(timestamp))
-        PG_RETURN_TEXT_P(cstring_to_text("ازل"));
-    if (TIMESTAMP_IS_NOEND(timestamp))
-        PG_RETURN_TEXT_P(cstring_to_text("ابد"));
-
-    pg_time_t t = timestamptz_to_time_t(timestamp);
-    pg_tz *tehran = pg_tzset("Asia/Tehran");
-    struct pg_tm *tm = pg_localtime(&t, tehran);
-    if (tehran == NULL || tm == NULL)
-        ereport(ERROR,
-                (errcode(ERRCODE_INTERNAL_ERROR),
-                 errmsg("could not get Tehran time")));
-    struct pg_tm jdate = tm_to_jalali(tm);
-
-    if (with_time) {
-        char buf[64];
-        int len = snprintf(buf, sizeof(buf), "%d/%02d/%02d %02d:%02d:%02d",
-                           jdate.tm_year, jdate.tm_mon, jdate.tm_mday,
-                           jdate.tm_hour, jdate.tm_min, jdate.tm_sec);
-        text *output = (text *) palloc(VARHDRSZ + len);
-        SET_VARSIZE(output, VARHDRSZ + len);
-        memcpy(VARDATA(output), buf, len);
-        PG_RETURN_TEXT_P(output);
-    } else {
-        char buf[64];
-        int len = snprintf(buf, sizeof(buf), "%d/%02d/%02d",
-                           jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
-        text *output = (text *) palloc(VARHDRSZ + len);
-        SET_VARSIZE(output, VARHDRSZ + len);
-        memcpy(VARDATA(output), buf, len);
-        PG_RETURN_TEXT_P(output);
-    }
+/* String literals in this file are UTF-8; convert before returning them. */
+static text *
+utf8_to_text(const char *utf8)
+{
+    return cstring_to_text(pg_any_to_server(utf8, strlen(utf8), PG_UTF8));
 }
 
-Datum format_jalali_date(PG_FUNCTION_ARGS){
-    DateADT date = PG_GETARG_DATEADT(0);
-    if (DATE_IS_NOBEGIN(date))
-        PG_RETURN_TEXT_P(cstring_to_text("ازل"));
-    if (DATE_IS_NOEND(date))
-        PG_RETURN_TEXT_P(cstring_to_text("ابد"));
-    if (date > 106751991 || date < -106751991)
+/*
+ * The Jalali date is the civil date in Tehran, so t is broken down in
+ * Asia/Tehran rather than in UTC.
+ */
+static struct pg_tm *
+tehran_localtime(const pg_time_t *t)
+{
+    pg_tz *tehran = pg_tzset("Asia/Tehran");
+    struct pg_tm *tm;
+
+    if (tehran == NULL)
+        ereport(ERROR,
+                (errcode(ERRCODE_INTERNAL_ERROR),
+                 errmsg("time zone \"Asia/Tehran\" is not available")));
+    tm = pg_localtime(t, tehran);
+    if (tm == NULL)
+        ereport(ERROR,
+                (errcode(ERRCODE_DATETIME_VALUE_OUT_OF_RANGE),
+                 errmsg("timestamp out of range")));
+    return tm;
+}
+
+/*
+ * A date maps to the timestamp of its midnight in UTC, which is the same
+ * civil day in Tehran.  Only the upper bound needs checking: dates and
+ * timestamps share their lower bound (Julian day zero).
+ */
+static TimestampTz
+date_to_timestamptz(DateADT date)
+{
+    if (date >= (TIMESTAMP_END_JULIAN - POSTGRES_EPOCH_JDATE))
         ereport(ERROR,
                 (errcode(ERRCODE_DATETIME_VALUE_OUT_OF_RANGE),
                  errmsg("date out of range for timestamp")));
-    Timestamp timestamp = date2timestamp_no_overflow(date);
+    return (TimestampTz) date * USECS_PER_DAY;
+}
 
-    pg_time_t t = timestamptz_to_time_t(timestamp);
-    struct pg_tm *gmt = pg_gmtime(&t);
-    if (gmt == NULL)
-        ereport(ERROR,
-                (errcode(ERRCODE_INTERNAL_ERROR),
-                 errmsg("could not convert timestamp")));
-    struct pg_tm tm = *gmt;
-    struct pg_tm jdate = tm_to_jalali(&tm);
+Datum
+format_jalali_timestamp(PG_FUNCTION_ARGS)
+{
+    TimestampTz timestamp = PG_GETARG_TIMESTAMPTZ(0);
+    bool with_time = PG_GETARG_BOOL(1);
+    pg_time_t t;
+    struct pg_tm jdate;
     char buf[64];
-    int len = snprintf(buf, sizeof(buf), "%d/%02d/%02d",
+    int len;
+
+    if (TIMESTAMP_IS_NOBEGIN(timestamp))
+        PG_RETURN_TEXT_P(utf8_to_text("ازل"));
+    if (TIMESTAMP_IS_NOEND(timestamp))
+        PG_RETURN_TEXT_P(utf8_to_text("ابد"));
+
+    t = timestamptz_to_time_t(timestamp);
+    jdate = tm_to_jalali(tehran_localtime(&t));
+
+    if (with_time)
+        len = snprintf(buf, sizeof(buf), "%d/%02d/%02d %02d:%02d:%02d",
+                       jdate.tm_year, jdate.tm_mon, jdate.tm_mday,
+                       jdate.tm_hour, jdate.tm_min, jdate.tm_sec);
+    else
+        len = snprintf(buf, sizeof(buf), "%d/%02d/%02d",
                        jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
-    text *output = (text *) palloc(VARHDRSZ + len);
-    SET_VARSIZE(output, VARHDRSZ + len);
-    memcpy(VARDATA(output), buf, len);
-    PG_RETURN_TEXT_P(output);
+    PG_RETURN_TEXT_P(cstring_to_text_with_len(buf, len));
+}
+
+Datum
+format_jalali_date(PG_FUNCTION_ARGS)
+{
+    DateADT date = PG_GETARG_DATEADT(0);
+    pg_time_t t;
+    struct pg_tm jdate;
+    char buf[64];
+    int len;
+
+    if (DATE_IS_NOBEGIN(date))
+        PG_RETURN_TEXT_P(utf8_to_text("ازل"));
+    if (DATE_IS_NOEND(date))
+        PG_RETURN_TEXT_P(utf8_to_text("ابد"));
+
+    t = timestamptz_to_time_t(date_to_timestamptz(date));
+    jdate = tm_to_jalali(tehran_localtime(&t));
+    len = snprintf(buf, sizeof(buf), "%d/%02d/%02d",
+                   jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
+    PG_RETURN_TEXT_P(cstring_to_text_with_len(buf, len));
 }
 
 
 static int time_t_to_jalali_part(text* units, pg_time_t* t) {
   char       *lowunits;
+  struct pg_tm *tm;
+  struct pg_tm jdatetime;
   int  type, val;
   float8      result;
 
-  pg_tz *tehran = pg_tzset("Asia/Tehran");
-  struct pg_tm *tm = pg_localtime(t, tehran);
-  if (tehran == NULL || tm == NULL)
-    ereport(ERROR,
-            (errcode(ERRCODE_INTERNAL_ERROR),
-             errmsg("could not get Tehran time")));
-  struct pg_tm jdatetime = tm_to_jalali(tm);
+  tm = tehran_localtime(t);
+  jdatetime = tm_to_jalali(tm);
 
   lowunits = downcase_truncate_identifier(VARDATA_ANY(units),
                                           VARSIZE_ANY_EXHDR(units),
@@ -173,11 +197,6 @@ static int time_t_to_jalali_part(text* units, pg_time_t* t) {
 
   if (type == UNKNOWN_FIELD)
     type = DecodeSpecial(0, lowunits, &val);
-
-  if (type != UNITS)
-    ereport(ERROR,
-            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-             errmsg("\"time\" units \"%s\" not recognized", lowunits)));
 
   switch (val)
     {
@@ -243,28 +262,21 @@ static int time_t_to_jalali_part(text* units, pg_time_t* t) {
 Datum jalali_part_timestamp(PG_FUNCTION_ARGS) {
   text *units = PG_GETARG_TEXT_PP(0);
   TimestampTz timestamp = PG_GETARG_TIMESTAMPTZ(1);
+  pg_time_t t;
+
   if (TIMESTAMP_NOT_FINITE(timestamp))
-    ereport(ERROR,
-            (errcode(ERRCODE_DATETIME_FIELD_OVERFLOW),
-             errmsg("timestamp out of range")));
-  pg_time_t t = timestamptz_to_time_t(timestamp);
-  int result = time_t_to_jalali_part(units, &t);
-  PG_RETURN_INT32(result);
+    PG_RETURN_NULL();
+  t = timestamptz_to_time_t(timestamp);
+  PG_RETURN_INT32(time_t_to_jalali_part(units, &t));
 }
 
 Datum jalali_part_date(PG_FUNCTION_ARGS) {
   text *units = PG_GETARG_TEXT_PP(0);
   DateADT date = PG_GETARG_DATEADT(1);
+  pg_time_t t;
+
   if (DATE_NOT_FINITE(date))
-    ereport(ERROR,
-            (errcode(ERRCODE_DATETIME_FIELD_OVERFLOW),
-             errmsg("timestamp out of range")));
-  if (date > 106751991 || date < -106751991)
-    ereport(ERROR,
-            (errcode(ERRCODE_DATETIME_VALUE_OUT_OF_RANGE),
-             errmsg("date out of range for timestamp")));
-  TimestampTz timestamp = date2timestamp_no_overflow(date);
-  pg_time_t t = timestamptz_to_time_t(timestamp);
-  int result = time_t_to_jalali_part(units, &t);
-  PG_RETURN_INT32(result);
+    PG_RETURN_NULL();
+  t = timestamptz_to_time_t(date_to_timestamptz(date));
+  PG_RETURN_INT32(time_t_to_jalali_part(units, &t));
 }

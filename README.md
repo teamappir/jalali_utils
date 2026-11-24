@@ -36,6 +36,12 @@ SELECT jalali_part('dow', '2019-07-07'); --> 4
 * decade
 * century
 
+Infinite inputs: `format_jalali` returns the Persian labels `ابد` (+infinity)
+and `ازل` (-infinity), which requires a database encoding that can represent
+them (UTF-8 does). `jalali_part` returns NULL. Dates after 294276-12-31,
+the end of the `timestamp` range, are rejected with `date out of range for
+timestamp`.
+
 # Installation
 
 CI tests PostgreSQL 12–19.

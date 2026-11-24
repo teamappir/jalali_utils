@@ -47,10 +47,10 @@ SELECT format_jalali('11000-06-15'::date);
  10379/03/26
 (1 row)
 
-SELECT octet_length(format_jalali('622-12-31'::date)) = char_length(format_jalali('622-12-31'::date));
- ?column? 
-----------
- t
+SELECT format_jalali('622-12-31'::date);
+ format_jalali 
+---------------
+ 1/10/10
 (1 row)
 
 SELECT format_jalali('infinity'::timestamptz);
@@ -83,6 +83,14 @@ SELECT format_jalali('294247-01-01'::date);
  293625/11/03
 (1 row)
 
+SELECT format_jalali('294276-12-31'::date);
+ format_jalali 
+---------------
+ 293655/11/03
+(1 row)
+
+SELECT format_jalali('294277-01-01'::date);
+ERROR:  date out of range for timestamp
 SELECT format_jalali('5874897-12-31'::date);
 ERROR:  date out of range for timestamp
 SELECT format_jalali('1600-03-20'::date);
