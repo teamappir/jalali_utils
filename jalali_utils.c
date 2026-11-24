@@ -10,8 +10,8 @@
 #include "utils/date.h"
 #include "utils/builtins.h"
 
-const int g_days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-const int j_days_in_month[12] = {31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29};
+static const int g_days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+static const int j_days_in_month[12] = {31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29};
 
 PG_MODULE_MAGIC;
 PG_FUNCTION_INFO_V1(format_jalali_timestamp);
@@ -19,13 +19,10 @@ PG_FUNCTION_INFO_V1(format_jalali_date);
 PG_FUNCTION_INFO_V1(jalali_part_timestamp);
 PG_FUNCTION_INFO_V1(jalali_part_date);
 
-struct pg_tm tm_to_jalali(struct pg_tm *tm);
-int time_t_to_jalali_part(text* units, pg_time_t *t);
-
 static int floordiv(int a, int b) {
   int q = a / b;
   if ((a % b != 0) && ((a < 0) != (b < 0))) {
-    q--
+    q--;
   };
   return q;
 }
@@ -34,7 +31,7 @@ static int floormod(int a, int b) {
   return a - floordiv(a, b) * b;
 }
 
-struct pg_tm tm_to_jalali(struct pg_tm *tm){
+static struct pg_tm tm_to_jalali(struct pg_tm *tm){
   struct pg_tm jalali;
   int j_day_no, j_np;
   int g_day_no, i;
@@ -146,7 +143,7 @@ Datum format_jalali_date(PG_FUNCTION_ARGS){
 }
 
 
-int time_t_to_jalali_part(text* units, pg_time_t* t) {
+static int time_t_to_jalali_part(text* units, pg_time_t* t) {
   char       *lowunits;
   int  type, val;
   float8      result;
