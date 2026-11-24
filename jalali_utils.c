@@ -91,10 +91,6 @@ whole_second_time_t(TimestampTz timestamp)
     return t;
 }
 
-/*
- * The Jalali date is the civil date in Tehran, so t is broken down in
- * Asia/Tehran rather than in UTC.
- */
 static struct pg_tm *
 tehran_localtime(const pg_time_t *t)
 {
@@ -113,11 +109,6 @@ tehran_localtime(const pg_time_t *t)
     return tm;
 }
 
-/*
- * A date maps to the timestamp of its midnight in UTC, which is the same
- * civil day in Tehran.  Only the upper bound needs checking: dates and
- * timestamps share their lower bound (Julian day zero).
- */
 static TimestampTz
 date_to_timestamptz(DateADT date)
 {
@@ -161,6 +152,7 @@ format_jalali_date(PG_FUNCTION_ARGS)
 {
     DateADT date = PG_GETARG_DATEADT(0);
     pg_time_t t;
+    struct pg_tm *tm;
     struct pg_tm jdate;
     char buf[64];
     int len;
@@ -170,8 +162,18 @@ format_jalali_date(PG_FUNCTION_ARGS)
     if (DATE_IS_NOEND(date))
         PG_RETURN_TEXT_P(cstring_to_text("infinity"));
 
+    /*
+     * Midnight UTC of a date falls on the same civil day in Tehran (the
+     * zone is east of Greenwich throughout tzdb history), so the UTC
+     * breakdown is enough here and skips the time-zone lookup.
+     */
     t = timestamptz_to_time_t(date_to_timestamptz(date));
-    jdate = tm_to_jalali(tehran_localtime(&t));
+    tm = pg_gmtime(&t);
+    if (tm == NULL)
+        ereport(ERROR,
+                (errcode(ERRCODE_DATETIME_VALUE_OUT_OF_RANGE),
+                 errmsg("timestamp out of range")));
+    jdate = tm_to_jalali(tm);
     len = snprintf(buf, sizeof(buf), "%d/%02d/%02d",
                    jdate.tm_year, jdate.tm_mon, jdate.tm_mday);
     PG_RETURN_TEXT_P(cstring_to_text_with_len(buf, len));
