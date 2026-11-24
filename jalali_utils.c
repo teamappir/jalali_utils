@@ -9,7 +9,6 @@
 #include "utils/datetime.h"
 #include "utils/date.h"
 #include "utils/builtins.h"
-#include "mb/pg_wchar.h"
 
 static const int g_days_in_month[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 static const int j_days_in_month[12] = {31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29};
@@ -24,12 +23,8 @@ static int floordiv(int a, int b) {
   int q = a / b;
   if ((a % b != 0) && ((a < 0) != (b < 0))) {
     q--;
-  };
+  }
   return q;
-}
-
-static int floormod(int a, int b) {
-  return a - floordiv(a, b) * b;
 }
 
 static struct pg_tm tm_to_jalali(struct pg_tm *tm){
@@ -52,7 +47,7 @@ static struct pg_tm tm_to_jalali(struct pg_tm *tm){
   j_day_no = g_day_no - 79;
 
   j_np = floordiv(j_day_no, 12053);
-  j_day_no = floormod(j_day_no, 12053);
+  j_day_no -= j_np * 12053;
   jalali.tm_year = 979 + (33 * j_np) + 4 * (j_day_no / 1461);
 
   j_day_no %= 1461;
@@ -84,13 +79,6 @@ static struct pg_tm tm_to_jalali(struct pg_tm *tm){
 
   return jalali;
 };
-
-/* String literals in this file are UTF-8; convert before returning them. */
-static text *
-utf8_to_text(const char *utf8)
-{
-    return cstring_to_text(pg_any_to_server(utf8, strlen(utf8), PG_UTF8));
-}
 
 static pg_time_t
 whole_second_time_t(TimestampTz timestamp)
@@ -151,9 +139,9 @@ format_jalali_timestamp(PG_FUNCTION_ARGS)
     int len;
 
     if (TIMESTAMP_IS_NOBEGIN(timestamp))
-        PG_RETURN_TEXT_P(utf8_to_text("ازل"));
+        PG_RETURN_TEXT_P(cstring_to_text("-infinity"));
     if (TIMESTAMP_IS_NOEND(timestamp))
-        PG_RETURN_TEXT_P(utf8_to_text("ابد"));
+        PG_RETURN_TEXT_P(cstring_to_text("infinity"));
 
     t = whole_second_time_t(timestamp);
     jdate = tm_to_jalali(tehran_localtime(&t));
@@ -178,9 +166,9 @@ format_jalali_date(PG_FUNCTION_ARGS)
     int len;
 
     if (DATE_IS_NOBEGIN(date))
-        PG_RETURN_TEXT_P(utf8_to_text("ازل"));
+        PG_RETURN_TEXT_P(cstring_to_text("-infinity"));
     if (DATE_IS_NOEND(date))
-        PG_RETURN_TEXT_P(utf8_to_text("ابد"));
+        PG_RETURN_TEXT_P(cstring_to_text("infinity"));
 
     t = timestamptz_to_time_t(date_to_timestamptz(date));
     jdate = tm_to_jalali(tehran_localtime(&t));
@@ -194,7 +182,7 @@ static int time_t_to_jalali_part(text* units, pg_time_t* t) {
   char       *lowunits;
   struct pg_tm *tm;
   struct pg_tm jdatetime;
-  int  type, val;
+  int  val;
   float8      result;
 
   tm = tehran_localtime(t);
@@ -204,10 +192,9 @@ static int time_t_to_jalali_part(text* units, pg_time_t* t) {
                                           VARSIZE_ANY_EXHDR(units),
                                           false);
 
-  type = DecodeUnits(0, lowunits, &val);
-
-  if (type == UNKNOWN_FIELD)
-    type = DecodeSpecial(0, lowunits, &val);
+  /* Both decoders store 0 in val for unknown units; the default case reports it. */
+  if (DecodeUnits(0, lowunits, &val) == UNKNOWN_FIELD)
+    DecodeSpecial(0, lowunits, &val);
 
   switch (val)
     {

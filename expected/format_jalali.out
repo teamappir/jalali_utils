@@ -56,25 +56,25 @@ SELECT format_jalali('622-12-31'::date);
 SELECT format_jalali('infinity'::timestamptz);
  format_jalali 
 ---------------
- ابد
+ infinity
 (1 row)
 
 SELECT format_jalali('-infinity'::timestamptz);
  format_jalali 
 ---------------
- ازل
+ -infinity
 (1 row)
 
 SELECT format_jalali('infinity'::date);
  format_jalali 
 ---------------
- ابد
+ infinity
 (1 row)
 
 SELECT format_jalali('-infinity'::date);
  format_jalali 
 ---------------
- ازل
+ -infinity
 (1 row)
 
 SELECT format_jalali('294247-01-01'::date);
