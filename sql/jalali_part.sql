@@ -52,4 +52,6 @@ SELECT jalali_part('day', '1000-01-01'::date);
 
 SELECT jalali_part('month', '1599-12-31'::date);
 
+SELECT jalali_part('day', '1599-12-31 23:59:59.9 Asia/Tehran'::timestamptz);
+
 DROP EXTENSION jalali_utils;

@@ -92,6 +92,17 @@ utf8_to_text(const char *utf8)
     return cstring_to_text(pg_any_to_server(utf8, strlen(utf8), PG_UTF8));
 }
 
+static pg_time_t
+whole_second_time_t(TimestampTz timestamp)
+{
+    pg_time_t t = timestamptz_to_time_t(timestamp);
+
+    /* PostgreSQL truncates toward zero; pre-2000 fractions need the earlier second. */
+    if (timestamp % USECS_PER_SEC < 0)
+        t--;
+    return t;
+}
+
 /*
  * The Jalali date is the civil date in Tehran, so t is broken down in
  * Asia/Tehran rather than in UTC.
@@ -144,7 +155,7 @@ format_jalali_timestamp(PG_FUNCTION_ARGS)
     if (TIMESTAMP_IS_NOEND(timestamp))
         PG_RETURN_TEXT_P(utf8_to_text("ابد"));
 
-    t = timestamptz_to_time_t(timestamp);
+    t = whole_second_time_t(timestamp);
     jdate = tm_to_jalali(tehran_localtime(&t));
 
     if (with_time)
@@ -266,7 +277,7 @@ Datum jalali_part_timestamp(PG_FUNCTION_ARGS) {
 
   if (TIMESTAMP_NOT_FINITE(timestamp))
     PG_RETURN_NULL();
-  t = timestamptz_to_time_t(timestamp);
+  t = whole_second_time_t(timestamp);
   PG_RETURN_INT32(time_t_to_jalali_part(units, &t));
 }
 

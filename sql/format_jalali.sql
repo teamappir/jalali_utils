@@ -19,4 +19,5 @@ SELECT format_jalali('294277-01-01'::date);
 SELECT format_jalali('5874897-12-31'::date);
 SELECT format_jalali('1600-03-20'::date);
 SELECT format_jalali('1000-01-01'::date);
+SELECT format_jalali('1599-12-31 23:59:59.9 Asia/Tehran'::timestamptz);
 DROP EXTENSION jalali_utils;

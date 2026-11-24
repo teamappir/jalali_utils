@@ -105,4 +105,10 @@ SELECT format_jalali('1000-01-01'::date);
  378/10/11
 (1 row)
 
+SELECT format_jalali('1599-12-31 23:59:59.9 Asia/Tehran'::timestamptz);
+   format_jalali    
+--------------------
+ 978/10/10 23:59:59
+(1 row)
+
 DROP EXTENSION jalali_utils;

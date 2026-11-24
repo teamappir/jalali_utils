@@ -151,4 +151,10 @@ SELECT jalali_part('month', '1599-12-31'::date);
           10
 (1 row)
 
+SELECT jalali_part('day', '1599-12-31 23:59:59.9 Asia/Tehran'::timestamptz);
+ jalali_part 
+-------------
+          10
+(1 row)
+
 DROP EXTENSION jalali_utils;
