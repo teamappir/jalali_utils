@@ -96,6 +96,10 @@ Datum format_jalali_timestamp(PG_FUNCTION_ARGS){
     pg_time_t t = timestamptz_to_time_t(timestamp);
     pg_tz *tehran = pg_tzset("Asia/Tehran");
     struct pg_tm *tm = pg_localtime(&t, tehran);
+    if (tehran == NULL || tm == NULL)
+        ereport(ERROR,
+                (errcode(ERRCODE_INTERNAL_ERROR),
+                 errmsg("could not get Tehran time")));
     struct pg_tm jdate = tm_to_jalali(tm);
 
     if (with_time) {
@@ -131,7 +135,12 @@ Datum format_jalali_date(PG_FUNCTION_ARGS){
     Timestamp timestamp = date2timestamp_no_overflow(date);
 
     pg_time_t t = timestamptz_to_time_t(timestamp);
-    struct pg_tm tm = *pg_gmtime(&t);
+    struct pg_tm *gmt = pg_gmtime(&t);
+    if (gmt == NULL)
+        ereport(ERROR,
+                (errcode(ERRCODE_INTERNAL_ERROR),
+                 errmsg("could not convert timestamp")));
+    struct pg_tm tm = *gmt;
     struct pg_tm jdate = tm_to_jalali(&tm);
     char buf[64];
     int len = snprintf(buf, sizeof(buf), "%d/%02d/%02d",
@@ -150,6 +159,10 @@ static int time_t_to_jalali_part(text* units, pg_time_t* t) {
 
   pg_tz *tehran = pg_tzset("Asia/Tehran");
   struct pg_tm *tm = pg_localtime(t, tehran);
+  if (tehran == NULL || tm == NULL)
+    ereport(ERROR,
+            (errcode(ERRCODE_INTERNAL_ERROR),
+             errmsg("could not get Tehran time")));
   struct pg_tm jdatetime = tm_to_jalali(tm);
 
   lowunits = downcase_truncate_identifier(VARDATA_ANY(units),
@@ -161,6 +174,10 @@ static int time_t_to_jalali_part(text* units, pg_time_t* t) {
   if (type == UNKNOWN_FIELD)
     type = DecodeSpecial(0, lowunits, &val);
 
+  if (type != UNITS)
+    ereport(ERROR,
+            (errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+             errmsg("\"time\" units \"%s\" not recognized", lowunits)));
 
   switch (val)
     {
@@ -186,7 +203,6 @@ static int time_t_to_jalali_part(text* units, pg_time_t* t) {
       result = (&jdatetime)->tm_year;
       break;
     case DTK_DOW:
-      result = tm->tm_year;
       result = j2day(date2j(tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday)) - 6;
       if (result < 0) {
         result += 7;
