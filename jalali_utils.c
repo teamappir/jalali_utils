@@ -22,6 +22,18 @@ PG_FUNCTION_INFO_V1(jalali_part_date);
 struct pg_tm tm_to_jalali(struct pg_tm *tm);
 int time_t_to_jalali_part(text* units, pg_time_t *t);
 
+static int floordiv(int a, int b) {
+  int q = a / b;
+  if ((a % b != 0) && ((a < 0) != (b < 0))) {
+    q--
+  };
+  return q;
+}
+
+static int floormod(int a, int b) {
+  return a - floordiv(a, b) * b;
+}
+
 struct pg_tm tm_to_jalali(struct pg_tm *tm){
   struct pg_tm jalali;
   int j_day_no, j_np;
@@ -29,7 +41,7 @@ struct pg_tm tm_to_jalali(struct pg_tm *tm){
 
   int gy = tm->tm_year + 300;
 
-  g_day_no = 365 * gy + (gy + 3) / 4 - (gy + 99) / 100 + (gy + 399) / 400;
+  g_day_no = 365 * gy + floordiv(gy + 3, 4) - floordiv(gy + 99, 100) + floordiv(gy + 399, 400);
 
   for (i = 0; i < tm->tm_mon; i++) {
     g_day_no += g_days_in_month[i];
@@ -41,8 +53,8 @@ struct pg_tm tm_to_jalali(struct pg_tm *tm){
   g_day_no += (tm->tm_mday - 1);
   j_day_no = g_day_no - 79;
 
-  j_np = j_day_no / 12053;
-  j_day_no %= 12053;
+  j_np = floordiv(j_day_no, 12053);
+  j_day_no = floormod(j_day_no, 12053);
   jalali.tm_year = 979 + (33 * j_np) + 4 * (j_day_no / 1461);
 
   j_day_no %= 1461;

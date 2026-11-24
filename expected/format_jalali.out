@@ -85,4 +85,16 @@ SELECT format_jalali('294247-01-01'::date);
 
 SELECT format_jalali('5874897-12-31'::date);
 ERROR:  date out of range for timestamp
+SELECT format_jalali('1600-03-20'::date);
+ format_jalali 
+---------------
+ 979/01/01
+(1 row)
+
+SELECT format_jalali('1000-01-01'::date);
+ format_jalali 
+---------------
+ 378/10/11
+(1 row)
+
 DROP EXTENSION jalali_utils;

@@ -48,4 +48,8 @@ SELECT jalali_part('year', '-infinity'::date);
 
 SELECT jalali_part('year', '5874897-12-31'::date);
 
+SELECT jalali_part('day', '1000-01-01'::date);
+
+SELECT jalali_part('month', '1599-12-31'::date);
+
 DROP EXTENSION jalali_utils;
