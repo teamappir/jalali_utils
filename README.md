@@ -36,6 +36,7 @@ SELECT jalali_part('dow', '2019-07-07'); --> 4
 * decade
 * century
 
+
 # Installation
 
 CI tests PostgreSQL 12–19.

@@ -41,4 +41,74 @@ SELECT format_jalali('2019-03-21'::date);
  1398/01/01
 (1 row)
 
+SELECT format_jalali('11000-06-15'::date);
+ format_jalali 
+---------------
+ 10379/03/26
+(1 row)
+
+SELECT format_jalali('622-12-31'::date);
+ format_jalali 
+---------------
+ 1/10/10
+(1 row)
+
+SELECT format_jalali('infinity'::timestamptz);
+ format_jalali 
+---------------
+ infinity
+(1 row)
+
+SELECT format_jalali('-infinity'::timestamptz);
+ format_jalali 
+---------------
+ -infinity
+(1 row)
+
+SELECT format_jalali('infinity'::date);
+ format_jalali 
+---------------
+ infinity
+(1 row)
+
+SELECT format_jalali('-infinity'::date);
+ format_jalali 
+---------------
+ -infinity
+(1 row)
+
+SELECT format_jalali('294247-01-01'::date);
+ format_jalali 
+---------------
+ 293625/11/03
+(1 row)
+
+SELECT format_jalali('294276-12-31'::date);
+ format_jalali 
+---------------
+ 293655/11/03
+(1 row)
+
+SELECT format_jalali('294277-01-01'::date);
+ERROR:  date out of range for timestamp
+SELECT format_jalali('5874897-12-31'::date);
+ERROR:  date out of range for timestamp
+SELECT format_jalali('1600-03-20'::date);
+ format_jalali 
+---------------
+ 979/01/01
+(1 row)
+
+SELECT format_jalali('1000-01-01'::date);
+ format_jalali 
+---------------
+ 378/10/11
+(1 row)
+
+SELECT format_jalali('1599-12-31 23:59:59.9 Asia/Tehran'::timestamptz);
+   format_jalali    
+--------------------
+ 978/10/10 23:59:59
+(1 row)
+
 DROP EXTENSION jalali_utils;

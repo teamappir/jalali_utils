@@ -42,4 +42,16 @@ SELECT jalali_part('dow', '2020-10-17');
 
 SELECT jalali_part('dow', '2020-10-23');
 
+SELECT jalali_part('year', '-infinity'::timestamptz);
+
+SELECT jalali_part('year', '-infinity'::date);
+
+SELECT jalali_part('year', '5874897-12-31'::date);
+
+SELECT jalali_part('day', '1000-01-01'::date);
+
+SELECT jalali_part('month', '1599-12-31'::date);
+
+SELECT jalali_part('day', '1599-12-31 23:59:59.9 Asia/Tehran'::timestamptz);
+
 DROP EXTENSION jalali_utils;

@@ -125,4 +125,36 @@ SELECT jalali_part('dow', '2020-10-23');
            6
 (1 row)
 
+SELECT jalali_part('year', '-infinity'::timestamptz);
+ jalali_part 
+-------------
+            
+(1 row)
+
+SELECT jalali_part('year', '-infinity'::date);
+ jalali_part 
+-------------
+            
+(1 row)
+
+SELECT jalali_part('year', '5874897-12-31'::date);
+ERROR:  date out of range for timestamp
+SELECT jalali_part('day', '1000-01-01'::date);
+ jalali_part 
+-------------
+          11
+(1 row)
+
+SELECT jalali_part('month', '1599-12-31'::date);
+ jalali_part 
+-------------
+          10
+(1 row)
+
+SELECT jalali_part('day', '1599-12-31 23:59:59.9 Asia/Tehran'::timestamptz);
+ jalali_part 
+-------------
+          10
+(1 row)
+
 DROP EXTENSION jalali_utils;
